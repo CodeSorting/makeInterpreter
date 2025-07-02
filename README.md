@@ -21,7 +21,7 @@ cd C:\java
 
 ### 2. 컴파일
 ```bash
-javac com/craftinginterpreters/lox/Lox.java
+javac com/craftinginterpreters/lox/*.java
 ```
 
 ### 3. 실행 방법

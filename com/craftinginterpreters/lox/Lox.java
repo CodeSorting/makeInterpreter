@@ -12,7 +12,9 @@ import com.craftinginterpreters.lox.AstPrinter;
 
 public class Lox {
     //소스코드를 직접 읽어 실행하는 스크립트 언어이다.
+    private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
     public static void main(String[] args) {
         if (args.length>1) {
             System.out.println("Usage: jlox [script]");
@@ -39,6 +41,7 @@ public class Lox {
         run(new String(bytes, Charset.defaultCharset())); //실행
         //종료 코드로 에러를 식별한다.
         if (hadError) System.exit(65);
+        if (hadRuntimeError) System.exit(70);
     }
 
     // ex) jlox -> 실시간 한줄씩 대화형 방식 REPL (Read-Eval-Print Loop)이라고 한다. ctrl D로 종료
@@ -59,7 +62,7 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens(); //토큰으로 쪼갬. Scanner.java에 있다.
 
-        /* 어휘 분석 용
+        /* 어휘 분석용
         for (Token token : tokens) {
             System.out.println(token); //일단 지금은 그냥 출력
         }
@@ -67,7 +70,8 @@ public class Lox {
         Parser parser = new Parser(tokens);
         Expr expression = parser.parse();
         if (hadError) return; //구문 에러 발생 시 멈춘다.
-        System.out.println(new AstPrinter().print(expression));
+        //System.out.println(new AstPrinter().print(expression)); //구문 분석용
+        interpreter.interpret(expression);
     }
     
     static void error(int line,String message) {
@@ -85,10 +89,10 @@ public class Lox {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
     }
-    /*
+    
     static void runtimeError(RuntimeError error) {
         System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
         hadRuntimeError = true;
     }
-    */
+    
 }
