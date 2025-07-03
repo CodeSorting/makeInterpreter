@@ -62,9 +62,23 @@ class Parser {
     }
     //print문 or 표현식
     private Stmt statement() {
+        if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
         return expressionStatement();
+    }
+    //Stmt.객체 를 리턴하면 Interpreter.java 에서 해당 객체를 실행함.
+    //if문
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after 'if' condition.");
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = statement();
+        }
+        return new Stmt.If(condition,thenBranch,elseBranch);
     }
     //print문
     private Stmt printStatement() {

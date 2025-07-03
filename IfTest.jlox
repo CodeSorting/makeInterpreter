@@ -1,0 +1,13 @@
+var a = 5;
+if (a==5) {
+    print "CORRECT!"; //출력
+} else { 
+    print "WRONG!";
+}
+if (a+1==6) {
+    a = a + 1;
+    print "A!"; //출력
+}
+else {
+    print "C!";
+}
