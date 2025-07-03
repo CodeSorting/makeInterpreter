@@ -4,6 +4,7 @@ import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.List;
 //추상 구문 트리에서 표현식 Stmt,Expr을 받아서 해당 표현식의 타입에 맞는 비지터 메서드를 호출함.
 class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
+    private Environment environment = new Environment();
     void interpret(List<Stmt> statements) {
         try {
             for (Stmt statement : statements) {
@@ -134,4 +135,17 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         return null; //실행되지 않는 코드
     }
 
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        Object value = null;
+        if (stmt.initializer != null) {
+            value = evaluate(stmt.initializer);
+        }
+        environment.define(stmt.name.lexeme,value);
+        return null;
+    }
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return environment.get(expr.name);
+    }
 }

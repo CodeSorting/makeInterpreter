@@ -91,10 +91,10 @@ public class Scanner {
             case '*': addToken(STAR); break;
             
             // 2글자 연산자들 (!=, ==, <=, >=)
-            case '!': addToken(match('=') ? BANG_EQUAL : BANG);
-            case '=': addToken(match('=') ? EQUAL_EQUAL : EQUAL);
-            case '<': addToken(match('=') ? LESS_EQUAL : LESS);
-            case '>': addToken(match('=') ? GREATER_EQUAL : GREATER);
+            case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;
+            case '=': addToken(match('=') ? EQUAL_EQUAL : EQUAL); break;
+            case '<': addToken(match('=') ? LESS_EQUAL : LESS); break;
+            case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
             
             // 주석 처리 (//로 시작하는 한 줄 주석)
             case '/':

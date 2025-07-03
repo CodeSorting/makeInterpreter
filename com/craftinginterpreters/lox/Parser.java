@@ -5,13 +5,17 @@ import java.util.List;
 import static com.craftinginterpreters.lox.TokenType.*;
 import static com.craftinginterpreters.lox.Lox.*;
 /*
+program -> declaration* EOF;
+declaration -> varDecl | statement;
+statement -> exprStmt | printStmt;
+varDecl -> "var" IDENTIFIER ( "=" expression ) ? ";" ;
 expression  → equality ;
 equality    → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "-" | "+" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
 unary       → ( "!" | "-" ) unary | primary ;
-primary     → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+primary     → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER;
 */
 class Parser {
     private static class ParseError extends RuntimeException {}
@@ -24,9 +28,18 @@ class Parser {
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
-            statements.add(statement());
+            statements.add(declaration());
         }
         return statements;
+    }
+    private Stmt declaration() {
+        try {
+            if (match(VAR)) return varDeclaration();
+            return statement();
+        } catch (ParseError error) {
+            synchronize();
+            return null;
+        }
     }
     private Expr expression() {
         return equality();
@@ -41,6 +54,16 @@ class Parser {
         Expr value = expression();
         consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
+    }
+    //변수 선언 및 에러 처리
+    private Stmt varDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect variable name");
+        Expr initializer = null;
+        if (match(EQUAL)) {
+            initializer = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after variable declaration");
+        return new Stmt.Var(name, initializer);
     }
     //표현식문
     private Stmt expressionStatement() {
@@ -124,6 +147,9 @@ class Parser {
         if (match(NIL)) return new Expr.Literal(null);
         if (match(NUMBER,STRING)) {
             return new Expr.Literal(previous().literal);
+        }
+        if (match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
         }
         if (match(LEFT_PAREN)) {
             Expr expr = expression();
