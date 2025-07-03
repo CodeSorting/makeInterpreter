@@ -1,15 +1,20 @@
 package com.craftinginterpreters.lox;
 
 import static com.craftinginterpreters.lox.TokenType.*;
-
-class Interpreter implements Expr.Visitor<Object> {
-    void interpret(Expr expression) {
+import java.util.List;
+//추상 구문 트리에서 표현식 Stmt,Expr을 받아서 해당 표현식의 타입에 맞는 비지터 메서드를 호출함.
+class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
+    void interpret(List<Stmt> statements) {
         try {
-            Object value = evaluate(expression);
-            System.out.println(stringify(value));
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
+    }
+    private void execute(Stmt stmt) {
+        stmt.accept(this);
     }
     @Override
     public Object visitLiteralExpr(Expr.Literal expr) {
@@ -19,9 +24,19 @@ class Interpreter implements Expr.Visitor<Object> {
     public Object visitGroupingExpr(Expr.Grouping expr) {
         return evaluate(expr.expression);
     }
-    //추상 구문 트리에서 표현식 Expr을 받아서 해당 표현식의 타입에 맞는 비지터 메서드를 호출함.
-    private Object evaluate(Expr expr) {
+    private Object evaluate(Expr expr) { 
         return expr.accept(this);
+    }
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        evaluate(stmt.expression); //표현식
+        return null;
+    }
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        Object value = evaluate(stmt.expression);
+        System.out.println(stringify(value)); //출력!
+        return null;
     }
     @Override
     public Object visitUnaryExpr(Expr.Unary expr) {

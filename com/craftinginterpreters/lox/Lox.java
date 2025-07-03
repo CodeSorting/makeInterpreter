@@ -68,10 +68,11 @@ public class Lox {
         }
         */
         Parser parser = new Parser(tokens);
-        Expr expression = parser.parse();
+        List<Stmt> statements = parser.parse();
+
         if (hadError) return; //구문 에러 발생 시 멈춘다.
         //System.out.println(new AstPrinter().print(expression)); //구문 분석용
-        interpreter.interpret(expression);
+        interpreter.interpret(statements);
     }
     
     static void error(int line,String message) {
