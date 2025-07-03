@@ -18,6 +18,27 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         stmt.accept(this);
     }
     @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        // 블록({ ... }) 내부의 문장들을 새로운 환경(Environment)에서 실행한다.
+        // 블록이 끝나면 이전 환경으로 되돌린다.
+        executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
+    void executeBlock(List<Stmt> statements,Environment environment) {
+        // 주어진 statements(문장 리스트)를 전달받은 environment(환경)에서 실행한다.
+        // 블록 실행 전 현재 환경을 저장하고, 블록 실행 후 원래 환경으로 복구한다.
+        Environment previous = this.environment;
+        try {
+            this.environment = environment; //현재 환경 저장
+
+            for (Stmt statement : statements) { //실행
+                execute(statement);
+            }
+        } finally {
+            this.environment = previous; //원래 환경으로 복구
+        }
+    }
+    @Override
     public Object visitLiteralExpr(Expr.Literal expr) {
         return expr.value;
     }

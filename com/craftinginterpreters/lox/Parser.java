@@ -7,7 +7,8 @@ import static com.craftinginterpreters.lox.Lox.*;
 /*
 program -> declaration* EOF;
 declaration -> varDecl | statement;
-statement -> exprStmt | printStmt;
+statement -> exprStmt | printStmt | block ;
+block -> "{" declaration* "}" ;
 varDecl -> "var" IDENTIFIER ( "=" expression ) ? ";" ;
 expression  → assignment;
 assignment -> IDENTIFIER "=" assignment | equality ;
@@ -62,6 +63,7 @@ class Parser {
     //print문 or 표현식
     private Stmt statement() {
         if (match(PRINT)) return printStatement();
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
         return expressionStatement();
     }
     //print문
@@ -85,6 +87,15 @@ class Parser {
         Expr expr = expression();
         consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Expression(expr);
+    }
+    //스코프 {} 추가문
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+        consume(RIGHT_BRACE,"Expect '}' after block.");
+        return statements;
     }
     private Expr equality() {
         Expr expr = comparison();
