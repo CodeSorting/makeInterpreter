@@ -1,6 +1,6 @@
 package com.craftinginterpreters.lox;
 
-// Expr(추상 구문 트리)를 사람이 읽기 쉽게 출력하는 클래스
+// Expr(추상 구문 트리)를 사람이 읽기 쉽게 출력하는 클래스 : 실제로는 필요 없다.
 public class AstPrinter implements Expr.Visitor<String> {
     public String print(Expr expr) {
         return expr.accept(this);
@@ -42,7 +42,7 @@ public class AstPrinter implements Expr.Visitor<String> {
     public String visitLogicalExpr(Expr.Logical expr) {
         return parenthesize(expr.operator.lexeme, expr.left, expr.right);
     }
-    
+    //1 + 2 * 3 -> (+ 1 ( * 2 3) )
     private String parenthesize(String name, Expr... exprs) {
         StringBuilder builder = new StringBuilder();
         builder.append("(").append(name);

@@ -1,5 +1,6 @@
 package com.craftinginterpreters.lox;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import static com.craftinginterpreters.lox.TokenType.*;
@@ -7,7 +8,10 @@ import static com.craftinginterpreters.lox.Lox.*;
 /*
 program -> declaration* EOF;
 declaration -> varDecl | statement;
-statement -> exprStmt | printStmt | block ;
+statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
+forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
+whileStmt -> "while" "(" expression ")" statement ;
 block -> "{" declaration* "}" ;
 varDecl -> "var" IDENTIFIER ( "=" expression ) ? ";" ;
 expression  → assignment;
@@ -82,12 +86,49 @@ class Parser {
     }
     //print문 or 표현식
     private Stmt statement() {
+        if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
+        if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
         return expressionStatement();
     }
     //Stmt.객체 를 리턴하면 Interpreter.java 에서 해당 객체를 실행함.
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+        //초기 값
+        Stmt initializer;
+        if (match(SEMICOLON)) {
+            initializer = null;
+        } else if (match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+        //조건문
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after loop condition.");
+        //증분
+        Expr increment = null;
+        if (!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+
+        Stmt body = statement();
+        if (increment!=null) {
+            body = new Stmt.Block(Arrays.asList(body,new Stmt.Expression(increment)));
+        }
+        if (condition==null) condition = new Expr.Literal(true);
+        body = new Stmt.While(condition,body);
+        if (initializer!=null) {
+            body = new Stmt.Block(Arrays.asList(initializer,body));
+        }
+        return body;
+    }
     //if,else if,else 문, 꼼수로 else 안에 if문,else를 넣는 식으로 else if를 구현함.
     private Stmt ifStatement() {
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
@@ -115,6 +156,14 @@ class Parser {
         }
         consume(SEMICOLON, "Expect ';' after variable declaration");
         return new Stmt.Var(name, initializer);
+    }
+    //while문
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
+        Stmt body = statement();
+        return new Stmt.While(condition, body);
     }
     //표현식문
     private Stmt expressionStatement() {
