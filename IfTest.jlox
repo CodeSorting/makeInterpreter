@@ -11,3 +11,12 @@ if (a+1==6) {
 else {
     print "C!";
 }
+
+var a = 2;
+if (a == 1) {
+    print "A";
+} else if (a == 2) {
+    print "B";
+} else {
+    print "C";
+}

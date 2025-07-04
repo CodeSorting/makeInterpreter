@@ -11,7 +11,9 @@ statement -> exprStmt | printStmt | block ;
 block -> "{" declaration* "}" ;
 varDecl -> "var" IDENTIFIER ( "=" expression ) ? ";" ;
 expression  → assignment;
-assignment -> IDENTIFIER "=" assignment | equality ;
+assignment -> IDENTIFIER "=" assignment | logic_or ;
+logic_or -> logic_and ( "or" logic_and )* ;
+logic_and -> equality ( "and" equality )* ;
 equality    → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "-" | "+" ) factor )* ;
@@ -47,7 +49,7 @@ class Parser {
         return assignment();
     }
     private Expr assignment() {
-        Expr expr = equality();
+        Expr expr = or();
         if (match(EQUAL)) {
             Token equals = previous();
             Expr value = assignment();
@@ -60,6 +62,24 @@ class Parser {
         }
         return expr;
     }
+    private Expr or() {
+        Expr expr = and();
+        while (match(OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr,operator,right);
+        }
+        return expr;
+    }
+    private Expr and() {
+        Expr expr = equality();
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr,operator,right);
+        }
+        return expr;
+    }
     //print문 or 표현식
     private Stmt statement() {
         if (match(IF)) return ifStatement();
@@ -68,7 +88,7 @@ class Parser {
         return expressionStatement();
     }
     //Stmt.객체 를 리턴하면 Interpreter.java 에서 해당 객체를 실행함.
-    //if문
+    //if,else if,else 문, 꼼수로 else 안에 if문,else를 넣는 식으로 else if를 구현함.
     private Stmt ifStatement() {
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = expression();
