@@ -7,7 +7,10 @@ import static com.craftinginterpreters.lox.TokenType.*;
 import static com.craftinginterpreters.lox.Lox.*;
 /*
 program -> declaration* EOF;
-declaration -> varDecl | statement;
+declaration -> funDecl | varDecl | statement;
+funDecl -> "fun" function ;
+function -> IDENTIFIER "(" parameters? ")" block ;
+parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
 statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
 forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
@@ -22,8 +25,11 @@ equality    → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "-" | "+" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
-unary       → ( "!" | "-" ) unary | primary ;
+unary       → ( "!" | "-" ) unary | call ;
+call        -> primary ( "(" arguments? ")" )* ;
 primary     → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER;
+
+arguments -> expression ( "," expression )* ;
 */
 class Parser {
     private static class ParseError extends RuntimeException {}
@@ -42,6 +48,7 @@ class Parser {
     }
     private Stmt declaration() {
         try {
+            if (match(FUN)) return function("function");
             if (match(VAR)) return varDeclaration();
             return statement();
         } catch (ParseError error) {
@@ -117,15 +124,17 @@ class Parser {
             increment = expression();
         }
         consume(RIGHT_PAREN, "Expect ')' after for clauses.");
-
-        Stmt body = statement();
-        if (increment!=null) {
+        
+        //for문을 이제 while문으로 파싱한다.
+        Stmt body = statement(); //body = Stmt.Print(i);
+        if (increment!=null) { //증감식이 있다면 body 뒤에 실행시킴.
             body = new Stmt.Block(Arrays.asList(body,new Stmt.Expression(increment)));
-        }
-        if (condition==null) condition = new Expr.Literal(true);
-        body = new Stmt.While(condition,body);
+        } // body = Block( [ Print(i), Expression(i = i + 1) ] )
+        if (condition==null) condition = new Expr.Literal(true); //조건식 없으면 무한루프
+        body = new Stmt.While(condition,body); //body = While( condition, Block( [ Print(i), Expression(i = i + 1) ] ) )
         if (initializer!=null) {
-            body = new Stmt.Block(Arrays.asList(initializer,body));
+            body = new Stmt.Block(Arrays.asList(initializer,body)); //body = Block( [ Var(i, 0), While( ... ) ] )
+
         }
         return body;
     }
@@ -170,6 +179,23 @@ class Parser {
         Expr expr = expression();
         consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Expression(expr);
+    }
+    private Stmt.Function function(String kind) {
+        Token name = consume(IDENTIFIER, "Expect" + kind + " name.");
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        List<Token> parameters = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size()>=255) {
+                    error(peek(),"Can't have more than 255 parameters.");
+                }
+                parameters.add(consume(IDENTIFIER, "Expect parameter name"));
+            } while (match(COMMA));
+        }
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
+        consume(LEFT_BRACE,"Expect '{' before " + kind + " body.");
+        List<Stmt> body = block();
+        return new Stmt.Function(name, parameters, body);
     }
     //스코프 {} 추가문
     private List<Stmt> block() {
@@ -248,7 +274,29 @@ class Parser {
             Expr right = unary();
             return new Expr.Unary(operator,right);
         }
-        return primary();
+        return call();
+    }
+    private Expr call() {
+        Expr expr = primary();
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+        return expr;
+    }
+    private Expr finishCall(Expr callee) {
+        List<Expr> arguments = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size()>=255)  error(peek(),"Can't have more than 255 arguments");
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+        return new Expr.Call(callee,paren,arguments);
     }
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);

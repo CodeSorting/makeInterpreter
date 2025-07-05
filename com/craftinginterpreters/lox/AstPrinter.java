@@ -42,6 +42,20 @@ public class AstPrinter implements Expr.Visitor<String> {
     public String visitLogicalExpr(Expr.Logical expr) {
         return parenthesize(expr.operator.lexeme, expr.left, expr.right);
     }
+
+    @Override
+    public String visitCallExpr(Expr.Call expr) {
+        // 예시: (call function (arg1 arg2))
+        StringBuilder builder = new StringBuilder();
+        builder.append("(call ");
+        builder.append(expr.callee.accept(this));
+        for (Expr argument : expr.arguments) {
+            builder.append(" ");
+            builder.append(argument.accept(this));
+        }
+        builder.append(")");
+        return builder.toString();
+    }
     //1 + 2 * 3 -> (+ 1 ( * 2 3) )
     private String parenthesize(String name, Expr... exprs) {
         StringBuilder builder = new StringBuilder();
