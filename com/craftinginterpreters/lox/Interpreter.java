@@ -3,12 +3,16 @@ package com.craftinginterpreters.lox;
 import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Scanner;
+
 //추상 구문 트리에서 표현식 Stmt,Expr을 받아서 해당 표현식의 타입에 맞는 비지터 메서드를 호출함.
 class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     // 전역 환경(네이티브 함수 등)을 저장
     final Environment globals = new Environment(); //네이티브 함수 정의를 위해 열어둠.
     // 현재 환경(스코프)
     private Environment environment = globals;
+    //scanNum,scanString 때문에 그럼.
+    Scanner sin = new Scanner(System.in);
     // 인터프리터 생성자, 전역에 clock 네이티브 함수 등록
     Interpreter() {
         globals.define("clock",new LoxCallable() {
@@ -18,6 +22,54 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
             @Override
             public Object call(Interpreter interpreter,List<Object> arguments) {
                 return (double)System.currentTimeMillis() / 1000.0;
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("scanText",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (String)sin.nextLine();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("scanNum",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (double)sin.nextDouble();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("문자열입력",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (String)sin.nextLine();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("숫자입력",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (double)sin.nextDouble();
             }
 
             @Override

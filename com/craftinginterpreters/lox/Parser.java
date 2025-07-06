@@ -120,7 +120,7 @@ class Parser {
     }
     //Stmt.객체 를 리턴하면 Interpreter.java 에서 해당 객체를 실행함.
     private Stmt forStatement() {
-        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+        consume(LEFT_PAREN, "'for' 다음에는 반드시 '('가 와야 합니다.");
         //초기 값
         Stmt initializer;
         if (match(SEMICOLON)) {
@@ -135,13 +135,13 @@ class Parser {
         if (!check(SEMICOLON)) {
             condition = expression();
         }
-        consume(SEMICOLON, "Expect ';' after loop condition.");
+        consume(SEMICOLON, "반복문의 조건 뒤에는 반드시 ';'가 와야 합니다.");
         //증분
         Expr increment = null;
         if (!check(RIGHT_PAREN)) {
             increment = expression();
         }
-        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+        consume(RIGHT_PAREN, "반복문 헤더의 마지막에는 반드시 ')'가 와야 합니다.");
         
         //for문을 이제 while문으로 파싱한다.
         Stmt body = statement(); //body = Stmt.Print(i);
@@ -158,9 +158,9 @@ class Parser {
     }
     //if,else if,else 문, 꼼수로 else 안에 if문,else를 넣는 식으로 else if를 구현함.
     private Stmt ifStatement() {
-        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        consume(LEFT_PAREN, "'if' 다음에는 반드시 '('가 와야 합니다.");
         Expr condition = expression();
-        consume(RIGHT_PAREN, "Expect ')' after 'if' condition.");
+        consume(RIGHT_PAREN, "'if' 조건 뒤에는 반드시 ')'가 와야 합니다.");
         Stmt thenBranch = statement();
         Stmt elseBranch = null;
         if (match(ELSE)) {
@@ -172,53 +172,53 @@ class Parser {
         Token keyword = previous();
         Expr value = null;
         if (!check(SEMICOLON)) value = expression();
-        consume(SEMICOLON, "Expect ';' after return value.");
+        consume(SEMICOLON, "return문 뒤에는 반드시 ';'가 와야 합니다.");
         return new Stmt.Return(keyword, value);
     }
     //print문
     private Stmt printStatement() {
         Expr value = expression();
-        consume(SEMICOLON, "Expect ';' after value.");
+        consume(SEMICOLON, "출력문 뒤에는 반드시 ';'가 와야 합니다.");
         return new Stmt.Print(value);
     }
     //변수 선언 및 에러 처리
     private Stmt varDeclaration() {
-        Token name = consume(IDENTIFIER, "Expect variable name");
+        Token name = consume(IDENTIFIER, "변수 선언에는 변수명이 필요합니다.");
         Expr initializer = null;
         if (match(EQUAL)) {
             initializer = expression();
         }
-        consume(SEMICOLON, "Expect ';' after variable declaration");
+        consume(SEMICOLON, "변수 선언문 끝에는 반드시 ';'가 와야 합니다.");
         return new Stmt.Var(name, initializer);
     }
     //while문
     private Stmt whileStatement() {
-        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        consume(LEFT_PAREN, "'while' 다음에는 반드시 '('가 와야 합니다.");
         Expr condition = expression();
-        consume(RIGHT_PAREN, "Expect ')' after condition.");
+        consume(RIGHT_PAREN, "'while' 조건 뒤에는 반드시 ')'가 와야 합니다.");
         Stmt body = statement();
         return new Stmt.While(condition, body);
     }
     //표현식문
     private Stmt expressionStatement() {
         Expr expr = expression();
-        consume(SEMICOLON, "Expect ';' after value.");
+        consume(SEMICOLON, "값 뒤에 ';' 가 와야 합니다.");
         return new Stmt.Expression(expr);
     }
     private Stmt.Function function(String kind) {
-        Token name = consume(IDENTIFIER, "Expect" + kind + " name.");
-        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Token name = consume(IDENTIFIER, kind + "의 이름이 필요합니다.");
+        consume(LEFT_PAREN, "함수 선언에는 반드시 '('가 와야 합니다.");
         List<Token> parameters = new ArrayList<>();
         if (!check(RIGHT_PAREN)) {
             do {
                 if (parameters.size()>=255) {
                     error(peek(),"매개변수는 255개를 넘을 수 없습니다.");
                 }
-                parameters.add(consume(IDENTIFIER, "Expect parameter name"));
+                parameters.add(consume(IDENTIFIER, "매개변수 이름이 필요합니다."));
             } while (match(COMMA));
         }
-        consume(RIGHT_PAREN, "Expect ')' after condition.");
-        consume(LEFT_BRACE,"Expect '{' before " + kind + " body.");
+        consume(RIGHT_PAREN, "함수 매개변수 목록 뒤에는 반드시 ')'가 와야 합니다.");
+        consume(LEFT_BRACE,"함수 본문 시작에는 반드시 '{'가 와야 합니다.");
         List<Stmt> body = block();
         return new Stmt.Function(name, parameters, body);
     }
@@ -228,7 +228,7 @@ class Parser {
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
             statements.add(declaration());
         }
-        consume(RIGHT_BRACE,"Expect '}' after block.");
+        consume(RIGHT_BRACE,"블록 끝에는 반드시 '}'가 와야 합니다.");
         return statements;
     }
     private Expr equality() {
@@ -320,7 +320,7 @@ class Parser {
                 arguments.add(expression());
             } while (match(COMMA));
         }
-        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+        Token paren = consume(RIGHT_PAREN, "함수 호출의 인자 목록 뒤에는 반드시 ')'가 와야 합니다.");
         return new Expr.Call(callee,paren,arguments);
     }
     private Expr primary() {
@@ -335,10 +335,10 @@ class Parser {
         }
         if (match(LEFT_PAREN)) {
             Expr expr = expression();
-            consume(RIGHT_PAREN,"Expect ')' after expression. ");
+            consume(RIGHT_PAREN,"괄호로 묶인 식 뒤에는 반드시 ')'가 와야 합니다.");
             return new Expr.Grouping(expr);
         }
-        throw error(peek(),"식이 필요합니다. ");
+        throw error(peek(),"식이 필요합니다.");
     }
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();
