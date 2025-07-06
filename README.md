@@ -46,7 +46,7 @@ java/
 - **Expr.java / Stmt.java**
   - Expr: 표현식(이항, 단항, 그룹, 변수, 리터럴, 할당 등) 추상 클래스와 내부 클래스들.
   - Stmt: 문장(블록, 변수 선언, print, 표현식) 추상 클래스와 내부 클래스들.
-  - 비지터 패턴을 통해 Interpreter, AstPrinter 등에서 타입별 처리 가능.
+  - **비지터 패턴(Visitor Pattern)**을 통해 Interpreter, AstPrinter 등에서 타입별 처리 가능.
 
 - **Interpreter.java**
   - AST(Stmt, Expr)를 실제로 실행(해석)하는 클래스.
@@ -54,6 +54,8 @@ java/
   - 각 visit 메서드에 주석으로 역할 설명:
     - `visitBlockStmt`: 블록 내부 문장들을 새로운 환경(Environment)에서 실행, 블록 종료 시 이전 환경으로 복구
     - `executeBlock`: 실제 환경 전환 및 문장 실행 로직
+    - `visitPrintStmt`: print문 실행 및 출력
+    - `visitBinaryExpr`: 이항 연산자 평가 등
 
 - **Environment.java**
   - 변수 이름과 값을 저장하는 맵(Map)과, 바깥(Environment) 참조(enclosing)를 가짐.
@@ -68,6 +70,27 @@ java/
 
 - **tool/GenerateAst.java**
   - Expr, Stmt 등 AST 클래스/비지터 인터페이스를 자동 생성하는 도구.
+
+---
+
+## 비지터 패턴(Visitor Pattern) 설명 및 본 프로젝트에서의 활용
+
+### 비지터 패턴이란?
+- **비지터 패턴**은 객체 구조(트리 등)를 변경하지 않고, 각 타입별로 다양한 연산(동작)을 분리해서 구현할 수 있게 해주는 디자인 패턴입니다.
+- 즉, 데이터 구조(예: AST)는 그대로 두고, 그 위에서 동작하는 로직(예: 해석, 출력 등)을 별도의 클래스로 분리할 수 있습니다.
+- 새로운 연산을 추가할 때 데이터 구조를 수정하지 않고, 비지터(Visitor)만 추가하면 되므로 확장성이 좋습니다.
+
+### Lox 인터프리터에서의 비지터 패턴 적용
+- **Expr.java**와 **Stmt.java**에서 각각 `Visitor` 인터페이스를 정의하고, 각 표현식/문장 타입(이항, 단항, 그룹, 변수, 블록 등) 내부에 `accept(Visitor)` 메서드를 구현합니다.
+- **Interpreter.java**와 **AstPrinter.java** 등은 이 Visitor 인터페이스를 구현하여, 각 타입별 동작(실행, 출력 등)을 visit 메서드로 분리합니다.
+- 예시:
+  - `Expr.Binary`(이항 연산식)은 `accept(Visitor)`를 통해 Interpreter의 `visitBinaryExpr` 또는 AstPrinter의 `visitBinaryExpr`를 호출합니다.
+  - `Stmt.Print`(print문)은 `accept(Visitor)`를 통해 Interpreter의 `visitPrintStmt`를 호출합니다.
+- 이렇게 하면 AST 구조(Expr, Stmt)는 변경하지 않고도, 다양한 동작(실행, 출력, 타입 검사 등)을 Visitor 클래스를 추가하여 확장할 수 있습니다.
+- **장점:**
+  - AST 구조와 동작(해석, 출력 등)이 분리되어 코드가 명확해짐
+  - 새로운 동작(Visitor) 추가가 쉬움 (예: 타입 검사기, 최적화기 등)
+  - 각 타입별 visit 메서드에 주석을 달아 역할을 명확히 설명할 수 있음
 
 ---
 

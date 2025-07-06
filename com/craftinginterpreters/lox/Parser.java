@@ -33,13 +33,16 @@ primary     → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" 
 arguments -> expression ( "," expression )* ;
 */
 class Parser {
+    // 파싱 에러를 나타내는 내부 예외 클래스
     private static class ParseError extends RuntimeException {}
 
     private final List<Token> tokens;
     private int current = 0;
+    // 토큰 리스트를 받아 파서 객체를 생성
     Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
+    // 토큰을 파싱하여 Stmt 리스트(프로그램 전체)를 반환
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
@@ -47,6 +50,7 @@ class Parser {
         }
         return statements;
     }
+    // 선언문을 파싱 (함수, 변수, 일반 문장)
     private Stmt declaration() {
         try {
             if (match(FUN)) return function("function");
@@ -57,9 +61,11 @@ class Parser {
             return null;
         }
     }
+    // 표현식을 파싱
     private Expr expression() {
         return assignment();
     }
+    // 할당문을 파싱 (a = b 형태)
     private Expr assignment() {
         Expr expr = or();
         if (match(EQUAL)) {
@@ -74,6 +80,7 @@ class Parser {
         }
         return expr;
     }
+    // 논리합(or) 연산을 파싱
     private Expr or() {
         Expr expr = and();
         while (match(OR)) {
@@ -83,6 +90,7 @@ class Parser {
         }
         return expr;
     }
+    // 논리곱(and) 연산을 파싱
     private Expr and() {
         Expr expr = equality();
         while (match(AND)) {
