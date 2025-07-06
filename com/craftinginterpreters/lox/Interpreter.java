@@ -3,12 +3,16 @@ package com.craftinginterpreters.lox;
 import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Scanner;
+
 //추상 구문 트리에서 표현식 Stmt,Expr을 받아서 해당 표현식의 타입에 맞는 비지터 메서드를 호출함.
 class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     // 전역 환경(네이티브 함수 등)을 저장
     final Environment globals = new Environment(); //네이티브 함수 정의를 위해 열어둠.
     // 현재 환경(스코프)
     private Environment environment = globals;
+    //scanNum,scanString 때문에 그럼.
+    Scanner sin = new Scanner(System.in);
     // 인터프리터 생성자, 전역에 clock 네이티브 함수 등록
     Interpreter() {
         globals.define("clock",new LoxCallable() {
@@ -18,6 +22,54 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
             @Override
             public Object call(Interpreter interpreter,List<Object> arguments) {
                 return (double)System.currentTimeMillis() / 1000.0;
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("scanText",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (String)sin.nextLine();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("scanNum",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (double)sin.nextDouble();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("문자열입력",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (String)sin.nextLine();
+            }
+
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+        globals.define("숫자입력",new LoxCallable() {
+            @Override
+            public int arity() { return 0; }
+
+            @Override
+            public Object call(Interpreter interpreter,List<Object> arguments) {
+                return (double)sin.nextDouble();
             }
 
             @Override
@@ -113,7 +165,7 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         Object value = evaluate(stmt.expression);
-        System.out.println(stringify(value)); //출력
+        System.out.println(stringify(value));
         return null;
     }
     // return문 실행 (Return 예외 발생)
@@ -139,12 +191,12 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     //단항 연산자 에러 체크
     private void checkNumberOperand(Token operator,Object operand) {
         if (operand instanceof Double) return;
-        throw new RuntimeError(operator,"Operand must be a number.");
+        throw new RuntimeError(operator,"피연산자는 숫자여야 합니다.");
     }
     //이항 연산자 에러 체크
     private void checkNumberOperand(Token operator,Object left,Object right) {
         if (left instanceof Double && right instanceof Double) return;
-        throw new RuntimeError(operator, "Operands must be numbers.");
+        throw new RuntimeError(operator, "모든 피연산자는 숫자여야 합니다.");
     }
     // 참/거짓 판별
     private boolean isTruthy(Object object) {
@@ -209,16 +261,22 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
                 if (left instanceof String && right instanceof Double) {
                     return (String)left + String.valueOf(right);
                 }
-                throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
+                throw new RuntimeError(expr.operator, "피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
             case SLASH:
                 checkNumberOperand(expr.operator,left,right);
                 if ((double)right == 0) { //0으로 나누면 에러
-                    throw new RuntimeError(expr.operator, "Division by zero.");
+                    throw new RuntimeError(expr.operator, "0으로 나눌 수 없습니다.");
                 }
                 return (double)left / (double)right;  
             case STAR:
                 checkNumberOperand(expr.operator,left,right);
                 return (double)left * (double)right;
+            case MOD:
+                checkNumberOperand(expr.operator,left,right);
+                if ((double)right == 0) {
+                    throw new RuntimeError(expr.operator, "0으로 나눌 수 없습니다.");
+                }
+                return (double)left % (double)right;
         }
         return null; //실행되지 않는 코드
     }
@@ -232,12 +290,12 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         }
 
         if (!(callee instanceof LoxCallable)) {
-            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+            throw new RuntimeError(expr.paren, "함수나 클래스로만 호출할 수 있습니다.");
         }
 
         LoxCallable function = (LoxCallable)callee;
         if (arguments.size() != function.arity()) {
-            throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+            throw new RuntimeError(expr.paren, "" + function.arity() + "개의 인자를 기대했지만, 실제로는 " + arguments.size() + "개를 받았습니다.");
         }
         return function.call(this,arguments);
     }
@@ -251,11 +309,23 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         environment.define(stmt.name.lexeme,value);
         return null;
     }
+    // break/continue 제어용 예외
+    private static class BreakException extends RuntimeException {}
+    private static class ContinueException extends RuntimeException {}
     // while문 실행
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
-        while (isTruthy(evaluate(stmt.condition))) {
-            execute(stmt.body);
+        try {
+            while (isTruthy(evaluate(stmt.condition))) {
+                try {
+                    execute(stmt.body);
+                } catch (ContinueException ce) {
+                    // 다음 반복으로 continue
+                    continue;
+                }
+            }
+        } catch (BreakException be) {
+            // break로 루프 탈출
         }
         return null;
     }
@@ -270,5 +340,13 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
         return environment.get(expr.name);
+    }
+    @Override
+    public Void visitBreakStmt(Stmt.Break stmt) {
+        throw new BreakException();
+    }
+    @Override
+    public Void visitContinueStmt(Stmt.Continue stmt) {
+        throw new ContinueException();
     }
 }

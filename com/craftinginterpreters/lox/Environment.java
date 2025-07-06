@@ -24,7 +24,7 @@ class Environment {
             return values.get(name.lexeme);
         }
         if (enclosing!=null) return enclosing.get(name); //재귀로 계속 들어가서 찾음.
-        throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+        throw new RuntimeError(name, "정의되지 않은 변수 '" + name.lexeme + "'입니다.");
     }
     void assign(Token name, Object value) {
         if (values.containsKey(name.lexeme)) {
@@ -35,6 +35,6 @@ class Environment {
             enclosing.assign(name,value);
             return;
         }
-        throw new RuntimeError(name,"Undefined variable '" + name.lexeme + "'.");
+        throw new RuntimeError(name,"정의되지 않은 변수 '" + name.lexeme + "'입니다.");
     }
 }

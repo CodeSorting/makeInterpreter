@@ -1,4 +1,2 @@
-var a = "ABC";
-print a;
-var b = 4; //정수
-print a+b;
+변수 정수 = 숫자입력();
+출력 정수;

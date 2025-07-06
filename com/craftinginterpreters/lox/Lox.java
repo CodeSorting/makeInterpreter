@@ -17,20 +17,20 @@ public class Lox {
     static boolean hadRuntimeError = false;
     public static void main(String[] args) {
         if (args.length>1) {
-            System.out.println("Usage: jlox [script]");
+            System.out.println("사용법: jlox [스크립트파일]");
             System.exit(64);
         } else if (args.length==1) {
             try {
                 runFile(args[0]);
             } catch (IOException e) {
-                System.err.println("Error reading file: " + e.getMessage());
+                System.err.println("파일 읽기 오류: " + e.getMessage());
                 System.exit(65);
             }
         } else { //args.length=0
             try {
                 runPrompt();
             } catch (IOException e) {
-                System.err.println("Error reading input: " + e.getMessage());
+                System.err.println("입력 읽기 오류: " + e.getMessage());
                 System.exit(65);
             }
         }
@@ -80,7 +80,10 @@ public class Lox {
     }
 
     private static void report(int line,String where,String message) {
-        System.err.println("[line " + line + "] Error" + where + ": " + message);
+        String whereKor = where;
+        if (where.equals(" at end")) whereKor = " 끝에서";
+        else if (where.startsWith(" at '")) whereKor = " '" + where.substring(5, where.length()-1) + "'에서";
+        System.err.println("[라인 " + line + "] 오류" + whereKor + ": " + message);
         hadError = true;
     }
     static void error(Token token, String message) {
@@ -92,7 +95,7 @@ public class Lox {
     }
     
     static void runtimeError(RuntimeError error) {
-        System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
+        System.err.println(error.getMessage() + "\n[라인 " + error.token.line + "]");
         hadRuntimeError = true;
     }
     

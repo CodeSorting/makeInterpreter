@@ -38,6 +38,24 @@ public class Scanner {
         keywords.put("true", TRUE);
         keywords.put("var", VAR);
         keywords.put("while", WHILE);
+        // 한글 키워드 추가
+        keywords.put("변수", VAR);
+        keywords.put("출력", PRINT);
+        keywords.put("범위반복", FOR);
+        keywords.put("함수", FUN);
+        keywords.put("만약", IF);
+        keywords.put("아니면", ELSE);
+        keywords.put("조건반복", WHILE);
+        keywords.put("반환", RETURN);
+        keywords.put("참", TRUE);
+        keywords.put("거짓", FALSE);
+        keywords.put("또는", OR);
+        keywords.put("그리고", AND);
+        keywords.put("널", NIL);
+        keywords.put("break", BREAK);
+        keywords.put("continue", CONTINUE);
+        keywords.put("중단", BREAK);
+        keywords.put("계속", CONTINUE);
     }
     
     /**
@@ -89,6 +107,7 @@ public class Scanner {
             case '+': addToken(PLUS); break;
             case ';': addToken(SEMICOLON); break;
             case '*': addToken(STAR); break;
+            case '%': addToken(MOD); break;
             
             // 2글자 연산자들 (!=, ==, <=, >=)
             case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;
@@ -127,7 +146,7 @@ public class Scanner {
             }else if (isAlpha(c)) {
                 identifier();
             }else {
-                Lox.error(line,"Unexpected character");
+                Lox.error(line,"예상치 못한 문자입니다.");
             }
             break;
         }
@@ -169,18 +188,18 @@ public class Scanner {
     }
     
     /**
-     * 문자가 알파벳인지 확인 (a-z, A-Z, _)
+     * 문자가 알파벳인지 확인 (a-z, A-Z, _, 한글)
      * @param c 확인할 문자
-     * @return 알파벳이면 true, 아니면 false
+     * @return 알파벳 또는 한글이면 true, 아니면 false
      */
     private boolean isAlpha(char c) {
-        return (c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_';
+        return (c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_' || (c >= '\uAC00' && c <= '\uD7A3');
     }
     
     /**
-     * 문자가 알파벳이나 숫자인지 확인
+     * 문자가 알파벳이나 숫자인지 확인 (한글 포함)
      * @param c 확인할 문자
-     * @return 알파벳이나 숫자이면 true, 아니면 false
+     * @return 알파벳, 한글, 숫자이면 true, 아니면 false
      */
     private boolean isAlphaNumeric(char c) {
         return isAlpha(c) || isDigit(c);    
@@ -238,7 +257,7 @@ public class Scanner {
             advance();
         }
         if (isAtEnd()) {
-            Lox.error(line, "Unterminated string.");
+            Lox.error(line, "문자열이 끝나지 않았습니다.");
             return;
         }
         // 닫는 큰따옴표 소비
