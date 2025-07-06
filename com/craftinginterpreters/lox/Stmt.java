@@ -12,6 +12,8 @@ abstract class Stmt{
     R visitReturnStmt(Return stmt);
     R visitVarStmt(Var stmt);
     R visitWhileStmt(While stmt);
+    R visitBreakStmt(Break stmt);
+    R visitContinueStmt(Continue stmt);
   }
   static class Block extends Stmt {
     Block(List<Stmt> statements) {
@@ -122,6 +124,16 @@ abstract class Stmt{
 
     final Expr condition;
     final Stmt body;
+  }
+  public static class Break extends Stmt {
+    public Break() {}
+    @Override
+    <R> R accept(Visitor<R> visitor) { return visitor.visitBreakStmt(this); }
+  }
+  public static class Continue extends Stmt {
+    public Continue() {}
+    @Override
+    <R> R accept(Visitor<R> visitor) { return visitor.visitContinueStmt(this); }
   }
 
   abstract <R> R accept(Visitor<R> visitor);

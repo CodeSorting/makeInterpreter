@@ -76,7 +76,7 @@ class Parser {
                 Token name = ((Expr.Variable)expr).name;
                 return new Expr.Assign(name, value);
             }
-            error(equals,"Invalid assignment target.");
+            error(equals,"잘못된 할당 대상입니다.");
         }
         return expr;
     }
@@ -107,6 +107,14 @@ class Parser {
         if (match(PRINT)) return printStatement();
         if (match(RETURN)) return returnStatement();
         if (match(WHILE)) return whileStatement();
+        if (match(BREAK)) {
+            consume(SEMICOLON, ";가 필요합니다.");
+            return new Stmt.Break();
+        }
+        if (match(CONTINUE)) {
+            consume(SEMICOLON, ";가 필요합니다.");
+            return new Stmt.Continue();
+        }
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
         return expressionStatement();
     }
@@ -204,7 +212,7 @@ class Parser {
         if (!check(RIGHT_PAREN)) {
             do {
                 if (parameters.size()>=255) {
-                    error(peek(),"Can't have more than 255 parameters.");
+                    error(peek(),"매개변수는 255개를 넘을 수 없습니다.");
                 }
                 parameters.add(consume(IDENTIFIER, "Expect parameter name"));
             } while (match(COMMA));
@@ -308,7 +316,7 @@ class Parser {
         List<Expr> arguments = new ArrayList<>();
         if (!check(RIGHT_PAREN)) {
             do {
-                if (arguments.size()>=255)  error(peek(),"Can't have more than 255 arguments");
+                if (arguments.size()>=255)  error(peek(),"인자는 255개를 넘을 수 없습니다.");
                 arguments.add(expression());
             } while (match(COMMA));
         }
@@ -330,7 +338,7 @@ class Parser {
             consume(RIGHT_PAREN,"Expect ')' after expression. ");
             return new Expr.Grouping(expr);
         }
-        throw error(peek(),"Expect expression. ");
+        throw error(peek(),"식이 필요합니다. ");
     }
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();

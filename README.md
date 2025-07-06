@@ -104,6 +104,7 @@ cd C:\java
 ### 2. 컴파일
 ```bash
 javac com/craftinginterpreters/lox/*.java
+-> 이렇게 하면 영어만 인식해서 한국어 쓸려고 intellij에서 컴파일을 먼저 하고 그 다음에 실행하였다.
 ```
 
 ### 3. 실행 방법
