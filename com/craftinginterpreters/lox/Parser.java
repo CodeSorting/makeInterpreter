@@ -11,7 +11,8 @@ declaration -> funDecl | varDecl | statement;
 funDecl -> "fun" function ;
 function -> IDENTIFIER "(" parameters? ")" block ;
 parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
-statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
+statement -> exprStmt | forStmt | ifStmt | printStmt | returnStmt | whileStmt | block ;
+returnStmt -> "return" expression? ";" ;
 forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
 whileStmt -> "while" "(" expression ")" statement ;
@@ -96,6 +97,7 @@ class Parser {
         if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
+        if (match(RETURN)) return returnStatement();
         if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
         return expressionStatement();
@@ -149,6 +151,13 @@ class Parser {
             elseBranch = statement();
         }
         return new Stmt.If(condition,thenBranch,elseBranch);
+    }
+    private Stmt returnStatement() {
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) value = expression();
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
     //print문
     private Stmt printStatement() {
