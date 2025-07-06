@@ -3,7 +3,7 @@ package com.craftinginterpreters.lox;
 enum TokenType {
     //단일 문자 토큰
     LEFT_PAREN,RIGHT_PAREN,LEFT_BRACE,RIGHT_BRACE,
-    COMMA,DOT,MINUS,PLUS,SEMICOLON,SLASH,STAR,
+    COMMA,DOT,MINUS,PLUS,SEMICOLON,SLASH,STAR,MOD,
     
     //문자 1개 or 2개짜리 토큰
     BANG,BANG_EQUAL,

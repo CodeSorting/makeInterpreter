@@ -107,6 +107,7 @@ public class Scanner {
             case '+': addToken(PLUS); break;
             case ';': addToken(SEMICOLON); break;
             case '*': addToken(STAR); break;
+            case '%': addToken(MOD); break;
             
             // 2글자 연산자들 (!=, ==, <=, >=)
             case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;

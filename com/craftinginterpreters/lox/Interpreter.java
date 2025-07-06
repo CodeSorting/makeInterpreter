@@ -219,6 +219,12 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
             case STAR:
                 checkNumberOperand(expr.operator,left,right);
                 return (double)left * (double)right;
+            case MOD:
+                checkNumberOperand(expr.operator,left,right);
+                if ((double)right == 0) {
+                    throw new RuntimeError(expr.operator, "0으로 나눌 수 없습니다.");
+                }
+                return (double)left % (double)right;
         }
         return null; //실행되지 않는 코드
     }
