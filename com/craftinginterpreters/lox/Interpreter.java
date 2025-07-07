@@ -289,6 +289,17 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
             arguments.add(evaluate(argument));
         }
 
+        
+        // 배열의 append/붙이기 메서드 지원
+        // callee가 [object, "append" 또는 "붙이기"] 형태인지 확인
+        if (callee instanceof List) {
+            List<?> prop = (List<?>)callee;
+            if (prop.size() == 2 && prop.get(0) instanceof List && ("append".equals(prop.get(1)) || "붙이기".equals(prop.get(1)))) {
+                ((List<Object>)prop.get(0)).add(arguments.get(0));
+                return null;
+            }
+        }
+
         if (!(callee instanceof LoxCallable)) {
             throw new RuntimeError(expr.paren, "함수나 클래스로만 호출할 수 있습니다.");
         }
@@ -364,22 +375,32 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         Object object = evaluate(expr.object);
         Object index = evaluate(expr.index);
         
-        if (!(object instanceof List)) {
-            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "array", null, 0), "배열이 아닌 객체에서 인덱싱을 시도했습니다.");
+        if (index instanceof Double) {
+            if (!(object instanceof List)) {
+                throw new RuntimeError(new Token(TokenType.IDENTIFIER, "array", null, 0), "배열이 아닌 객체에서 인덱싱을 시도했습니다.");
+            }
+            List<Object> list = (List<Object>)object;
+            int idx = (int)(double)index;
+            if (idx < 0 || idx >= list.size()) {
+                throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스가 범위를 벗어났습니다.");
+            }
+            return list.get(idx);
+        } else if (index instanceof String) {
+            // length/길이 지원
+            if (object instanceof List && (index.equals("length") || index.equals("길이"))) {
+                return (double)((List<?>)object).size();
+            }
+            // append/붙이기 지원 (메서드 접근)
+            if (object instanceof List && (index.equals("append") || index.equals("붙이기"))) {
+                List<Object> prop = new ArrayList<>();
+                prop.add(object);
+                prop.add(index);
+                return prop;
+            }
+        } else {
+            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스는 숫자 또는 문자열(프로퍼티)이여야 합니다.");
         }
-        
-        if (!(index instanceof Double)) {
-            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스는 숫자여야 합니다.");
-        }
-        
-        List<Object> list = (List<Object>)object;
-        int idx = (int)(double)index;
-        
-        if (idx < 0 || idx >= list.size()) {
-            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스가 범위를 벗어났습니다.");
-        }
-        
-        return list.get(idx);
+        return null;
     }
     // 배열 요소 할당 평가
     @Override

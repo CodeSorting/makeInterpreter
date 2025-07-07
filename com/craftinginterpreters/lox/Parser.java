@@ -312,6 +312,9 @@ class Parser {
                 expr = finishCall(expr);
             } else if (match(LEFT_BRACKET)) {
                 expr = finishArrayAccess(expr);
+            } else if (match(DOT)) {
+                Token name = consume(IDENTIFIER, "프로퍼티 이름이 필요합니다.");
+                expr = new Expr.Get(expr, new Expr.Literal(name.lexeme));
             } else {
                 break;
             }
