@@ -12,6 +12,9 @@ abstract class Expr{
     R visitLogicalExpr(Logical expr);
     R visitUnaryExpr(Unary expr);
     R visitVariableExpr(Variable expr);
+    R visitArrayExpr(Array expr);
+    R visitGetExpr(Get expr);
+    R visitSetExpr(Set expr);
   }
   static class Assign extends Expr {
     Assign(Token name, Expr value) {
@@ -124,6 +127,43 @@ abstract class Expr{
     }
 
     final Token name;
+  }
+  static class Array extends Expr {
+    Array(List<Expr> elements) {
+      this.elements = elements;
+    }
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitArrayExpr(this);
+    }
+    final List<Expr> elements;
+  }
+  static class Get extends Expr {
+    Get(Expr object, Expr index) {
+      this.object = object;
+      this.index = index;
+    }
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitGetExpr(this);
+    }
+    final Expr object;
+    final Expr index;
+  }
+
+  static class Set extends Expr {
+    Set(Expr object, Expr index, Expr value) {
+      this.object = object;
+      this.index = index;
+      this.value = value;
+    }
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitSetExpr(this);
+    }
+    final Expr object;
+    final Expr index;
+    final Expr value;
   }
 
   abstract <R> R accept(Visitor<R> visitor);

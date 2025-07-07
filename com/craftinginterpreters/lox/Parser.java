@@ -76,6 +76,10 @@ class Parser {
                 Token name = ((Expr.Variable)expr).name;
                 return new Expr.Assign(name, value);
             }
+            if (expr instanceof Expr.Get) {
+                Expr.Get get = (Expr.Get)expr;
+                return new Expr.Set(get.object, get.index, value);
+            }
             error(equals,"잘못된 할당 대상입니다.");
         }
         return expr;
@@ -306,6 +310,8 @@ class Parser {
         while (true) {
             if (match(LEFT_PAREN)) {
                 expr = finishCall(expr);
+            } else if (match(LEFT_BRACKET)) {
+                expr = finishArrayAccess(expr);
             } else {
                 break;
             }
@@ -323,6 +329,11 @@ class Parser {
         Token paren = consume(RIGHT_PAREN, "함수 호출의 인자 목록 뒤에는 반드시 ')'가 와야 합니다.");
         return new Expr.Call(callee,paren,arguments);
     }
+    private Expr finishArrayAccess(Expr array) {
+        Expr index = expression();
+        consume(RIGHT_BRACKET, "배열 인덱스 뒤에는 ']'가 필요합니다.");
+        return new Expr.Get(array, index);
+    }
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);
         if (match(TRUE)) return new Expr.Literal(true);
@@ -337,6 +348,16 @@ class Parser {
             Expr expr = expression();
             consume(RIGHT_PAREN,"괄호로 묶인 식 뒤에는 반드시 ')'가 와야 합니다.");
             return new Expr.Grouping(expr);
+        }
+        if (match(LEFT_BRACKET)) {
+            List<Expr> elements = new ArrayList<>();
+            if (!check(RIGHT_BRACKET)) {
+                do {
+                    elements.add(expression());
+                } while (match(COMMA));
+            }
+            consume(RIGHT_BRACKET, "]가 필요합니다.");
+            return new Expr.Array(elements);
         }
         throw error(peek(),"식이 필요합니다.");
     }

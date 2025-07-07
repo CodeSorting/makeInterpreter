@@ -349,4 +349,61 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     public Void visitContinueStmt(Stmt.Continue stmt) {
         throw new ContinueException();
     }
+    // 배열 리터럴 평가
+    @Override
+    public Object visitArrayExpr(Expr.Array expr) {
+        List<Object> result = new ArrayList<>();
+        for (Expr element : expr.elements) {
+            result.add(evaluate(element));
+        }
+        return result;
+    }
+    // 배열 인덱싱 평가
+    @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        Object object = evaluate(expr.object);
+        Object index = evaluate(expr.index);
+        
+        if (!(object instanceof List)) {
+            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "array", null, 0), "배열이 아닌 객체에서 인덱싱을 시도했습니다.");
+        }
+        
+        if (!(index instanceof Double)) {
+            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스는 숫자여야 합니다.");
+        }
+        
+        List<Object> list = (List<Object>)object;
+        int idx = (int)(double)index;
+        
+        if (idx < 0 || idx >= list.size()) {
+            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스가 범위를 벗어났습니다.");
+        }
+        
+        return list.get(idx);
+    }
+    // 배열 요소 할당 평가
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        Object object = evaluate(expr.object);
+        Object index = evaluate(expr.index);
+        Object value = evaluate(expr.value);
+        
+        if (!(object instanceof List)) {
+            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "array", null, 0), "배열이 아닌 객체에서 할당을 시도했습니다.");
+        }
+        
+        if (!(index instanceof Double)) {
+            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스는 숫자여야 합니다.");
+        }
+        
+        List<Object> list = (List<Object>)object;
+        int idx = (int)(double)index;
+        
+        if (idx < 0 || idx >= list.size()) {
+            throw new RuntimeError(new Token(TokenType.IDENTIFIER, "index", null, 0), "배열 인덱스가 범위를 벗어났습니다.");
+        }
+        
+        list.set(idx, value);
+        return value;
+    }
 }

@@ -56,6 +56,32 @@ public class AstPrinter implements Expr.Visitor<String> {
         builder.append(")");
         return builder.toString();
     }
+
+    @Override
+    public String visitArrayExpr(Expr.Array expr) {
+        // 예시: (array 1 2 3)
+        StringBuilder builder = new StringBuilder();
+        builder.append("(array");
+        for (Expr element : expr.elements) {
+            builder.append(" ");
+            builder.append(element.accept(this));
+        }
+        builder.append(")");
+        return builder.toString();
+    }
+
+    @Override
+    public String visitGetExpr(Expr.Get expr) {
+        // 예시: (get array 0)
+        return parenthesize("get", expr.object, expr.index);
+    }
+
+    @Override
+    public String visitSetExpr(Expr.Set expr) {
+        // 예시: (set array 0 value)
+        return parenthesize("set", expr.object, expr.index, expr.value);
+    }
+
     //1 + 2 * 3 -> (+ 1 ( * 2 3) )
     private String parenthesize(String name, Expr... exprs) {
         StringBuilder builder = new StringBuilder();
