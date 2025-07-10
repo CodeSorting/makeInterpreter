@@ -22,6 +22,7 @@ public class Lox {
         } else if (args.length==1) {
             try {
                 runFile(args[0]);
+                Interpreter.bw.flush();
             } catch (IOException e) {
                 System.err.println("파일 읽기 오류: " + e.getMessage());
                 System.exit(65);
@@ -29,6 +30,7 @@ public class Lox {
         } else { //args.length=0
             try {
                 runPrompt();
+                Interpreter.bw.flush();
             } catch (IOException e) {
                 System.err.println("입력 읽기 오류: " + e.getMessage());
                 System.exit(65);

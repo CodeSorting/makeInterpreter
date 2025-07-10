@@ -254,20 +254,31 @@ public class Scanner {
      * 큰따옴표로 둘러싸인 문자열을 읽어서 토큰으로 생성
      */
     private void string() {
-        while (peek()!='"' && !isAtEnd()) {
-            if (peek()=='\n') line++;
-            advance();
+        StringBuilder sb = new StringBuilder();
+        while (peek() != '"' && !isAtEnd()) {
+            if (peek() == '\n') line++;
+            if (peek() == '\\') {
+                advance(); // 역슬래시 소비
+                char next = peek();
+                switch (next) {
+                    case 'n': sb.append('\n'); advance(); break;
+                    case 't': sb.append('\t'); advance(); break;
+                    case 'r': sb.append('\r'); advance(); break;
+                    case '"': sb.append('\"'); advance(); break;
+                    case '\\': sb.append('\\'); advance(); break;
+                    default: sb.append('\\'); break; // 알 수 없는 이스케이프는 그냥 \로 처리
+                }
+            } else {
+                sb.append(advance());
+            }
         }
         if (isAtEnd()) {
             Lox.error(line, "문자열이 끝나지 않았습니다.");
             return;
         }
-        // 닫는 큰따옴표 소비
-        advance();
-
-        // 앞뒤 큰따옴표 제거하여 실제 문자열 값 추출
-        String value = source.substring(start+1,current-1);
-        addToken(STRING,value);
+        advance(); // 닫는 큰따옴표 소비
+        String value = sb.toString();
+        addToken(STRING, value);
     }
 
     /**

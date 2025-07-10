@@ -7,9 +7,16 @@ import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.StringTokenizer;
 
 //추상 구문 트리에서 표현식 Stmt,Expr을 받아서 해당 표현식의 타입에 맞는 비지터 메서드를 호출함.
 class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
+    public static final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));
     // 전역 환경(네이티브 함수 등)을 저장
     final Environment globals = new Environment(); //네이티브 함수 정의를 위해 열어둠.
     // 현재 환경(스코프)
@@ -18,6 +25,28 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     Scanner sin = new Scanner(System.in);
     //리졸브 위한 변수
     private final Map<Expr,Integer> locals = new HashMap<>();
+    // 빠른 입력용 버퍼 및 토크나이저
+    private static final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+    private static StringTokenizer st = null;
+
+    // 빠른 문자열 입력
+    private static String fastReadString() {
+        while (st == null || !st.hasMoreTokens()) {
+            try {
+                String line = br.readLine();
+                if (line == null) return null;
+                st = new StringTokenizer(line);
+            } catch (IOException e) {
+                throw new RuntimeException("입력 오류: " + e.getMessage());
+            }
+        }
+        return st.nextToken();
+    }
+
+    // 빠른 숫자 입력
+    private static double fastReadDouble() {
+        return Double.parseDouble(fastReadString());
+    }
     // 인터프리터 생성자, 전역에 clock 네이티브 함수 등록
     Interpreter() {
         globals.define("clock",new LoxCallable() {
@@ -32,51 +61,43 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
             @Override
             public String toString() { return "<native fn>"; }
         });
-        globals.define("scanText",new LoxCallable() {
+        globals.define("scanText", new LoxCallable() {
             @Override
             public int arity() { return 0; }
-
             @Override
-            public Object call(Interpreter interpreter,List<Object> arguments) {
-                return (String)sin.nextLine();
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return fastReadString();
             }
-
             @Override
             public String toString() { return "<native fn>"; }
         });
-        globals.define("scanNum",new LoxCallable() {
+        globals.define("scanNum", new LoxCallable() {
             @Override
             public int arity() { return 0; }
-
             @Override
-            public Object call(Interpreter interpreter,List<Object> arguments) {
-                return (double)sin.nextDouble();
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return fastReadDouble();
             }
-
             @Override
             public String toString() { return "<native fn>"; }
         });
-        globals.define("문자열입력",new LoxCallable() {
+        globals.define("문자열입력", new LoxCallable() {
             @Override
             public int arity() { return 0; }
-
             @Override
-            public Object call(Interpreter interpreter,List<Object> arguments) {
-                return (String)sin.nextLine();
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return fastReadString();
             }
-
             @Override
             public String toString() { return "<native fn>"; }
         });
-        globals.define("숫자입력",new LoxCallable() {
+        globals.define("숫자입력", new LoxCallable() {
             @Override
             public int arity() { return 0; }
-
             @Override
-            public Object call(Interpreter interpreter,List<Object> arguments) {
-                return (double)sin.nextDouble();
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return fastReadDouble();
             }
-
             @Override
             public String toString() { return "<native fn>"; }
         });
@@ -173,7 +194,11 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         Object value = evaluate(stmt.expression);
-        System.out.println(stringify(value));
+        try {
+            bw.write(stringify(value));
+        } catch (IOException e) {
+            throw new RuntimeException("출력 오류: " + e.getMessage());
+        }
         return null;
     }
     // return문 실행 (Return 예외 발생)
@@ -298,13 +323,19 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         }
 
         
-        // 배열의 append/붙이기 메서드 지원
-        // callee가 [object, "append" 또는 "붙이기"] 형태인지 확인
+        // 배열의 append/붙이기/pop_back/뒤에서빼기 메서드 지원
         if (callee instanceof List) {
             List<?> prop = (List<?>)callee;
-            if (prop.size() == 2 && prop.get(0) instanceof List && ("append".equals(prop.get(1)) || "붙이기".equals(prop.get(1)))) {
-                ((List<Object>)prop.get(0)).add(arguments.get(0));
-                return null;
+            if (prop.size() == 2 && prop.get(0) instanceof List) {
+                List<Object> list = (List<Object>)prop.get(0);
+                Object method = prop.get(1);
+                if ("append".equals(method) || "붙이기".equals(method)) {
+                    list.add(arguments.get(0));
+                    return null;
+                } else if ("pop_back".equals(method) || "뒤에서빼기".equals(method)) {
+                    if (list.size() == 0) return null;
+                    return list.remove(list.size() - 1);
+                }
             }
         }
 
@@ -411,8 +442,8 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
             if (object instanceof List && (index.equals("length") || index.equals("길이"))) {
                 return (double)((List<?>)object).size();
             }
-            // append/붙이기 지원 (메서드 접근)
-            if (object instanceof List && (index.equals("append") || index.equals("붙이기"))) {
+            // append/붙이기/pop_back/뒤에서빼기 지원 (메서드 접근)
+            if (object instanceof List && (index.equals("append") || index.equals("붙이기") || index.equals("pop_back") || index.equals("뒤에서빼기"))) {
                 List<Object> prop = new ArrayList<>();
                 prop.add(object);
                 prop.add(index);

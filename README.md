@@ -151,6 +151,9 @@ java com.craftinginterpreters.lox.Lox [파일명.lox]
 > var x = 42;
 > var name = "Lox";
 > var result = x + 10;
+> print result;
+> 변수 한국어 = "한국어이다.";
+> 출력 한국어;
 ```
 
 ### 토큰 분석 결과
@@ -161,6 +164,7 @@ java com.craftinginterpreters.lox.Lox [파일명.lox]
 - `IDENTIFIER` - 변수명
 - `NUMBER` - 숫자 리터럴
 - `SEMICOLON` - 세미콜론
+- ...
 
 ## 주의사항
 - Java 8 이상이 필요합니다
@@ -273,7 +277,7 @@ java com.craftinginterpreters.lox.Lox [파일명.lox]
 
 함수 이진탐색(배열, 찾는값) {
     변수 왼쪽 = 0;
-    변수 오른쪽 = 배열.length - 1;
+    변수 오른쪽 = 배열.길이 - 1;
     조건반복 (왼쪽 <= 오른쪽) {
         변수 중간값 = (왼쪽 + 오른쪽) / 2;
         중간값 = (중간값 - 중간값 % 1); // 정수 내림
@@ -296,4 +300,5 @@ java com.craftinginterpreters.lox.Lox [파일명.lox]
 ---
 
 ### 주의 사항
+- 연산 속도가 끔찍하게 느리다. 1000만번 반복문 안 기준 1.56초가 걸린다. 10만번 출력은 1.18초(원래 6초였는데 이것도 줄인거다)로 매우 느리다.
 - continue를 쓰면 for문에서 증감연산자가 안먹힘. continue를 하면 해당 for문의 연산을 끝내는데 문제는 증감 연산자도 끝냅니다.
