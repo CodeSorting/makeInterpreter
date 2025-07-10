@@ -3,7 +3,10 @@ package com.craftinginterpreters.lox;
 import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
+import java.util.Map;
+import java.util.HashMap;
 
 //추상 구문 트리에서 표현식 Stmt,Expr을 받아서 해당 표현식의 타입에 맞는 비지터 메서드를 호출함.
 class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
@@ -13,6 +16,8 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     private Environment environment = globals;
     //scanNum,scanString 때문에 그럼.
     Scanner sin = new Scanner(System.in);
+    //리졸브 위한 변수
+    private final Map<Expr,Integer> locals = new HashMap<>();
     // 인터프리터 생성자, 전역에 clock 네이티브 함수 등록
     Interpreter() {
         globals.define("clock",new LoxCallable() {
@@ -89,6 +94,9 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     // 단일 문장 실행
     private void execute(Stmt stmt) {
         stmt.accept(this);
+    }
+    void resolve(Expr expr, int depth) {
+        locals.put(expr,depth);
     }
     // 블록({ ... }) 문장 실행 (새 환경 생성)
     @Override
@@ -344,13 +352,26 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
-        environment.assign(expr.name,value);
+        Integer distance = locals.get(expr);
+        if (distance!=null) {
+            environment.assignAt(distance,expr.name,value);
+        } else {
+            globals.assign(expr.name,value);
+        }
         return value;
     }
     // 변수 참조 평가
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-        return environment.get(expr.name);
+        return lookUpVariable(expr.name,expr);
+    }
+    private Object lookUpVariable(Token name,Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance!=null) {
+            return environment.getAt(distance,name.lexeme);
+        } else {
+            return globals.get(name);
+        }
     }
     @Override
     public Void visitBreakStmt(Stmt.Break stmt) {

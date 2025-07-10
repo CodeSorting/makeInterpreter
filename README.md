@@ -9,12 +9,13 @@ java/
         ├── lox/
         │   ├── AstPrinter.java      # 추상 구문 트리(Expr)를 사람이 읽기 쉽게 출력하는 클래스
         │   ├── Environment.java     # 변수 스코프(환경)를 구현, 중첩 환경 지원
-        │   ├── Expr.java            # 표현식(Expr) 추상 구문 트리 및 비지터 패턴 정의
-        │   ├── Interpreter.java     # AST(Stmt, Expr)를 실행하는 인터프리터, 스코프 관리
+        │   ├── Expr.java            # 표현식(Expr) 추상 구문 트리 및 비지터 패턴 정의, 배열/인덱싱/메서드 등 지원
+        │   ├── Interpreter.java     # AST(Stmt, Expr)를 실행하는 인터프리터, 스코프 관리, 배열/append/길이 등 지원
         │   ├── Lox.java             # 메인 클래스, REPL 및 파일 실행 진입점
-        │   ├── Parser.java          # 파서(구문 분석기), 토큰 리스트를 AST로 변환
+        │   ├── Parser.java          # 파서(구문 분석기), 토큰 리스트를 AST로 변환, 배열 리터럴/인덱싱/메서드 호출 지원
+        │   ├── Resolver.java        # 변수/함수 이름의 유효 범위(스코프) 추적 및 바인딩, 중복 선언/미정의 변수 체크
         │   ├── RuntimeError.java    # 런타임 에러 처리 클래스
-        │   ├── Scanner.java         # 소스코드를 토큰 리스트로 변환하는 스캐너(어휘 분석기)
+        │   ├── Scanner.java         # 소스코드를 토큰 리스트로 변환하는 스캐너(어휘 분석기), 한글 키워드 지원
         │   ├── Stmt.java            # 문장(Stmt) 추상 구문 트리 및 비지터 패턴 정의
         │   ├── Token.java           # 토큰 객체, 타입/이름/리터럴/라인 정보 포함
         │   └── TokenType.java       # 토큰 타입 열거형(키워드, 연산자, 리터럴 등)
@@ -26,13 +27,14 @@ java/
 
 - **Lox.java**
   - 프로그램의 진입점. REPL(대화형) 또는 파일 실행을 지원.
-  - `run()`에서 Scanner → Parser → Interpreter 순으로 실행.
+  - `run()`에서 Scanner → Parser → Resolver → Interpreter 순으로 실행.
   - 에러 처리 및 메시지 출력 담당.
 
 - **Scanner.java**
   - 소스코드를 문자 단위로 읽어 토큰(Token) 리스트로 변환.
-  - 주석, 문자열, 숫자, 식별자, 키워드, 연산자 등 다양한 토큰을 인식.
+  - 한글/영문 키워드, 연산자, 식별자, 숫자, 문자열 등 다양한 토큰을 인식.
   - 내부적으로 `scanToken()`, `number()`, `identifier()` 등 메서드로 세분화.
+  - **한글 키워드 완벽 지원**: 변수, 함수, 반환, 출력, 조건반복, 만약, 아니면 등
 
 - **Token.java / TokenType.java**
   - Token: 토큰의 타입, 원본 문자열, 리터럴 값, 라인 정보를 저장.
@@ -41,21 +43,31 @@ java/
 - **Parser.java**
   - 토큰 리스트를 받아 AST(Stmt, Expr)로 변환.
   - Lox의 문법을 재귀 하강 파싱 방식으로 구현.
-  - 변수 선언, 블록, 표현식, print문 등 다양한 구문을 처리.
+  - 변수 선언, 블록, 표현식, print문, **배열 리터럴([1,2,3])**, **배열 인덱싱(a[0])**, **메서드 호출(a.append(1), a.붙이기(1))** 등 다양한 구문을 처리.
 
 - **Expr.java / Stmt.java**
-  - Expr: 표현식(이항, 단항, 그룹, 변수, 리터럴, 할당 등) 추상 클래스와 내부 클래스들.
-  - Stmt: 문장(블록, 변수 선언, print, 표현식) 추상 클래스와 내부 클래스들.
-  - **비지터 패턴(Visitor Pattern)**을 통해 Interpreter, AstPrinter 등에서 타입별 처리 가능.
+  - Expr: 표현식(이항, 단항, 그룹, 변수, 리터럴, 할당, 배열, 인덱싱, 메서드 등) 추상 클래스와 내부 클래스들.
+  - Stmt: 문장(블록, 변수 선언, print, 표현식, break/continue 등) 추상 클래스와 내부 클래스들.
+  - **비지터 패턴(Visitor Pattern)**을 통해 Interpreter, AstPrinter, Resolver 등에서 타입별 처리 가능.
 
 - **Interpreter.java**
   - AST(Stmt, Expr)를 실제로 실행(해석)하는 클래스.
   - 변수 스코프(블록) 처리를 위해 Environment를 사용.
+  - **배열(ArrayList) 지원**: 배열 리터럴, 인덱싱, 요소 할당, append/붙이기, length/길이 등
   - 각 visit 메서드에 주석으로 역할 설명:
     - `visitBlockStmt`: 블록 내부 문장들을 새로운 환경(Environment)에서 실행, 블록 종료 시 이전 환경으로 복구
-    - `executeBlock`: 실제 환경 전환 및 문장 실행 로직
+    - `visitArrayExpr`: 배열 리터럴 평가, 자바 ArrayList로 변환
+    - `visitGetExpr`: 배열 인덱싱, 메서드/프로퍼티 접근 처리
+    - `visitCallExpr`: 함수/메서드 호출, append/붙이기 등 지원
+    - `visitSetExpr`: 배열 요소 할당
+    - `visitVarStmt`: 변수 선언 및 초기화
     - `visitPrintStmt`: print문 실행 및 출력
     - `visitBinaryExpr`: 이항 연산자 평가 등
+
+- **Resolver.java**
+  - 변수, 함수 등 이름(식별자)의 유효 범위(스코프)를 추적하고, 올바른 바인딩을 찾아주는 역할
+  - 중복 선언, 미정의 변수 사용 등 오류를 미리 잡아줌
+  - 함수/블록/지역변수 스코프 관리, resolveLocal로 바인딩 위치 추적
 
 - **Environment.java**
   - 변수 이름과 값을 저장하는 맵(Map)과, 바깥(Environment) 참조(enclosing)를 가짐.
@@ -70,6 +82,15 @@ java/
 
 - **tool/GenerateAst.java**
   - Expr, Stmt 등 AST 클래스/비지터 인터페이스를 자동 생성하는 도구.
+
+---
+
+## 최근 추가/확장된 주요 기능
+
+- **배열 리터럴/인덱싱/메서드**: `[1,2,3]`, `a[0]`, `a.append(4)`, `a.붙이기(5)`, `a.length`, `a.길이` 등 완벽 지원
+- **한글 키워드/메서드/속성**: 변수, 함수, 반환, 출력, 조건반복, 만약, 아니면, 길이, 붙이기 등
+- **break/continue**: 반복문 제어 지원
+- **스코프/이름 바인딩**: Resolver로 중복 선언, 미정의 변수 등 오류 사전 방지
 
 ---
 
@@ -275,4 +296,4 @@ java com.craftinginterpreters.lox.Lox [파일명.lox]
 ---
 
 ### 주의 사항
-- continue를 쓰면 for문에서 증감연산자가 안먹힘. continue를 하면 해당 for문의 연산을 끝내는데 문제는 증감 연산자도 끝낸다.
+- continue를 쓰면 for문에서 증감연산자가 안먹힘. continue를 하면 해당 for문의 연산을 끝내는데 문제는 증감 연산자도 끝냅니다.

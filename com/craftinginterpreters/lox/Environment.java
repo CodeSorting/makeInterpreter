@@ -18,6 +18,19 @@ class Environment {
     void define(String name,Object value) {
         values.put(name,value);
     }
+    Object getAt(int distance,String name) {
+        return ancestor(distance).values.get(name);
+    }
+    Environment ancestor(int distance) {
+        Environment environment = this;
+        for (int i=0;i<distance;++i) {
+            environment = environment.enclosing;
+        }
+        return environment;
+    }
+    void assignAt(int distance,Token name, Object value) {
+        ancestor(distance).values.put(name.lexeme,value);
+    }
     //원소 값 얻기 (정의 안되어 있으면 실패)
     Object get(Token name) {
         if (values.containsKey(name.lexeme)) {

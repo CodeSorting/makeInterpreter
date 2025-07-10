@@ -72,6 +72,13 @@ public class Lox {
 
         if (hadError) return; //구문 에러 발생 시 멈춘다.
         //System.out.println(new AstPrinter().print(expression)); //구문 분석용
+        //리졸빙 평가
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+        
+        if (hadError) return; //레졸루션 에러 시 멈춘다.
+
+        //의미 분석
         interpreter.interpret(statements);
     }
     
