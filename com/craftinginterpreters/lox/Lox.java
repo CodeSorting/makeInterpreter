@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import com.craftinginterpreters.lox.Scanner;
-import com.craftinginterpreters.lox.AstPrinter;
+//import com.craftinginterpreters.lox.AstPrinter;
 
 public class Lox {
     //소스코드를 직접 읽어 실행하는 스크립트 언어이다.

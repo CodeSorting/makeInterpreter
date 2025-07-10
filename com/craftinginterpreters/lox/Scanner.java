@@ -1,6 +1,5 @@
 package com.craftinginterpreters.lox;
 
-import java.lang.management.PlatformLoggingMXBean;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +38,8 @@ public class Scanner {
         keywords.put("var", VAR);
         keywords.put("while", WHILE);
         // 한글 키워드 추가
+        keywords.put("클래스",CLASS);
+        keywords.put("지금객체",THIS); //어렵네..
         keywords.put("변수", VAR);
         keywords.put("출력", PRINT);
         keywords.put("범위반복", FOR);

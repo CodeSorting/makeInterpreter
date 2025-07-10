@@ -6,8 +6,9 @@ import java.util.List;
 import static com.craftinginterpreters.lox.TokenType.*;
 import static com.craftinginterpreters.lox.Lox.*;
 /*
-program -> declaration* EOF;
-declaration -> funDecl | varDecl | statement;
+program -> declaration* EOF ;
+declaration -> classDecl | funDecl | varDecl | statement ;
+classDecl -> "class" IDENTIFIER "{" function* "}" ; //class 안의 함수는 fun 없음.
 funDecl -> "fun" function ;
 function -> IDENTIFIER "(" parameters? ")" block ;
 parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
@@ -27,7 +28,7 @@ comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "-" | "+" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
 unary       → ( "!" | "-" ) unary | call ;
-call        -> primary ( "(" arguments? ")" )* ;
+call        -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 primary     → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER;
 
 arguments -> expression ( "," expression )* ;
@@ -53,6 +54,7 @@ class Parser {
     // 선언문을 파싱 (함수, 변수, 일반 문장)
     private Stmt declaration() {
         try {
+            if (match(CLASS)) return classDeclaration();
             if (match(FUN)) return function("function");
             if (match(VAR)) return varDeclaration();
             return statement();
@@ -60,6 +62,17 @@ class Parser {
             synchronize();
             return null;
         }
+    }
+    //클래스 파싱
+    private Stmt classDeclaration() {
+        Token name = consume(IDENTIFIER, "클래스 이름이 와야함.");
+        consume(LEFT_BRACE, "클래스 바디 앞에 '{'가 와야함.");
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+        consume(RIGHT_BRACE, "클래스 바디 끝에 '}'가 와야함.");
+        return new Stmt.Class(name,methods);
     }
     // 표현식을 파싱
     private Expr expression() {
@@ -76,9 +89,13 @@ class Parser {
                 Token name = ((Expr.Variable)expr).name;
                 return new Expr.Assign(name, value);
             }
-            if (expr instanceof Expr.Get) {
+            else if (expr instanceof Expr.IndexGet) {
+                Expr.IndexGet get = (Expr.IndexGet)expr;
+                return new Expr.IndexSet(get.object, get.index, value);
+            }
+            else if (expr instanceof Expr.Get) {
                 Expr.Get get = (Expr.Get)expr;
-                return new Expr.Set(get.object, get.index, value);
+                return new Expr.Set(get.object,get.name,value);
             }
             error(equals,"잘못된 할당 대상입니다.");
         }
@@ -314,7 +331,7 @@ class Parser {
                 expr = finishArrayAccess(expr);
             } else if (match(DOT)) {
                 Token name = consume(IDENTIFIER, "프로퍼티 이름이 필요합니다.");
-                expr = new Expr.Get(expr, new Expr.Literal(name.lexeme));
+                expr = new Expr.Get(expr,name);
             } else {
                 break;
             }
@@ -335,7 +352,7 @@ class Parser {
     private Expr finishArrayAccess(Expr array) {
         Expr index = expression();
         consume(RIGHT_BRACKET, "배열 인덱스 뒤에는 ']'가 필요합니다.");
-        return new Expr.Get(array, index);
+        return new Expr.IndexGet(array, index);
     }
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);

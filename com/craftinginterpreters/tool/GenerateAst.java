@@ -14,24 +14,32 @@ public class GenerateAst {
         }
         String outputDir = args[0];
         defineAst(outputDir,"Expr",Arrays.asList(
-          "Assign : Token name, Expr value",
-             "Binary   : Expr left, Token operator, Expr right",
+          "Binary   : Expr left, Token operator, Expr right",
              "Call : Expr callee, Token paren, List<Expr> arguments",
+             "Get : Expr object, Token name",
+             "Set : Expr object, Token name, Expr value",
+             "IndexGet   : Expr object, Expr index",
+             "IndexSet   : Expr object, Expr index, Expr value",
              "Grouping : Expr expression",
              "Literal  : Object value", 
              "Logical  : Expr left, Token operator, Expr right",
              "Unary    : Token operator, Expr right",
-             "Variable : Token name"
+             "Variable : Token name",
+             "Assign   : Token name, Expr value",
+             "Array    : List<Expr> elements"
         ));
         defineAst(outputDir, "Stmt", Arrays.asList(
           "Block : List<Stmt> statements",
+            "Class : Token name, List<Stmt.Function> methods",
             "Expression : Expr expression",
             "Function : Token name, List<Token> params, List<Stmt> body",
             "If : Expr condition, Stmt thenBranch," + " Stmt elseBranch",
                 "Print : Expr expression",
                 "Return : Token keyword, Expr value",
                 "Var : Token name, Expr initializer",
-                "While : Expr condition, Stmt body"
+                "While : Expr condition, Stmt body",
+                "Break      : ",
+                "Continue   : "
         ));
     }
     private static void defineAst(
@@ -50,8 +58,9 @@ public class GenerateAst {
 
         //AST 클래스
         for (String type : types) {
-            String className = type.split(":")[0].trim();
-            String fields = type.split(":")[1].trim();
+            String[] parts = type.split(":");
+            String className = parts[0].trim();
+            String fields = parts.length > 1 ? parts[1].trim() : "";
             defineType(writer,baseName,className,fields);
         }
         //베이스 accept() 메서드
@@ -70,29 +79,41 @@ public class GenerateAst {
         writer.println("  }");
     }
     private static void defineType(
-        PrintWriter writer,String baseName, String className, String fieldList
-    ) {
+        PrintWriter writer, String baseName, String className, String fieldList) {
         writer.println("  static class " + className + " extends " + baseName + " {");
 
-        //생성자
-        writer.println("    " + className + "(" + fieldList + ") {");
-        
-        String[] fields = fieldList.split(", ");
-        for (String field : fields) {
-            String name = field.split(" ")[1];
-            writer.println("      this." + name + " = " + name + ";");
+        // 생성자
+        writer.print("    " + className + "(");
+        if (!fieldList.isEmpty()) {
+            String[] fields = fieldList.split(", ");
+            for (int i = 0; i < fields.length; i++) {
+                writer.print(fields[i]);
+                if (i != fields.length - 1) writer.print(", ");
+            }
+        }
+        writer.println(") {");
+        if (!fieldList.isEmpty()) {
+            String[] fields = fieldList.split(", ");
+            for (String field : fields) {
+                String name = field.split(" ")[1];
+                writer.println("      this." + name + " = " + name + ";");
+            }
         }
         writer.println("    }");
-        //비지터 패턴
+
+        // 비지터 패턴 accept 메서드 (항상 생성)
         writer.println();
         writer.println("    @Override");
         writer.println("    <R> R accept(Visitor<R> visitor) {");
         writer.println("      return visitor.visit" + className + baseName + "(this);");
         writer.println("    }");
-        //필드
-        writer.println();
-        for (String field : fields) {
-            writer.println("    final " + field + ";");
+
+        // 필드 선언
+        if (!fieldList.isEmpty()) {
+            String[] fields = fieldList.split(", ");
+            for (String field : fields) {
+                writer.println("    final " + field + ";");
+            }
         }
         writer.println("  }");
     }

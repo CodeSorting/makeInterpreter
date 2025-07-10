@@ -119,6 +119,18 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     void resolve(Expr expr, int depth) {
         locals.put(expr,depth);
     }
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        environment.define(stmt.name.lexeme, null);
+        Map<String,LoxFunction> methods = new HashMap<>();
+        for (Stmt.Function method : stmt.methods) {
+            LoxFunction function = new LoxFunction(method, environment);
+            methods.put(method.name.lexeme, function);
+        }
+        LoxClass klass = new LoxClass(stmt.name.lexeme,methods);
+        environment.assign(stmt.name, klass); //맵에 클래스 이름 : LoxClass() 객체 하나 넣기
+        return null;
+    }
     // 블록({ ... }) 문장 실행 (새 환경 생성)
     @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
@@ -349,6 +361,24 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         }
         return function.call(this,arguments);
     }
+    @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        Object object = evaluate(expr.object);
+        if (object instanceof LoxInstance) {
+            return ((LoxInstance)object).get(expr.name);
+        }
+        throw new RuntimeError(expr.name, "오직 인스턴스들만 프로퍼티를 가집니다.");
+    }
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        Object object = evaluate(expr.object);
+        if (!(object instanceof LoxInstance)) {
+            throw new RuntimeError(expr.name, "인스턴스만 필드를 가집니다.");
+        }
+        Object value = evaluate(expr.value);
+        ((LoxInstance)object).set(expr.name,value);
+        return value;
+    }
     // 변수 선언문 실행
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
@@ -423,7 +453,7 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     }
     // 배열 인덱싱 평가
     @Override
-    public Object visitGetExpr(Expr.Get expr) {
+    public Object visitIndexGetExpr(Expr.IndexGet expr) {
         Object object = evaluate(expr.object);
         Object index = evaluate(expr.index);
         
@@ -456,7 +486,7 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     }
     // 배열 요소 할당 평가
     @Override
-    public Object visitSetExpr(Expr.Set expr) {
+    public Object visitIndexSetExpr(Expr.IndexSet expr) {
         Object object = evaluate(expr.object);
         Object index = evaluate(expr.index);
         Object value = evaluate(expr.value);

@@ -5,6 +5,7 @@ import java.util.List;
 abstract class Stmt{
   interface Visitor<R> {
     R visitBlockStmt(Block stmt);
+    R visitClassStmt(Class stmt);
     R visitExpressionStmt(Expression stmt);
     R visitFunctionStmt(Function stmt);
     R visitIfStmt(If stmt);
@@ -24,8 +25,20 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitBlockStmt(this);
     }
-
     final List<Stmt> statements;
+  }
+  static class Class extends Stmt {
+    Class(Token name, List<Stmt.Function> methods) {
+      this.name = name;
+      this.methods = methods;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitClassStmt(this);
+    }
+    final Token name;
+    final List<Stmt.Function> methods;
   }
   static class Expression extends Stmt {
     Expression(Expr expression) {
@@ -36,7 +49,6 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitExpressionStmt(this);
     }
-
     final Expr expression;
   }
   static class Function extends Stmt {
@@ -50,7 +62,6 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitFunctionStmt(this);
     }
-
     final Token name;
     final List<Token> params;
     final List<Stmt> body;
@@ -66,7 +77,6 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitIfStmt(this);
     }
-
     final Expr condition;
     final Stmt thenBranch;
     final Stmt elseBranch;
@@ -80,7 +90,6 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitPrintStmt(this);
     }
-
     final Expr expression;
   }
   static class Return extends Stmt {
@@ -93,7 +102,6 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitReturnStmt(this);
     }
-
     final Token keyword;
     final Expr value;
   }
@@ -107,7 +115,6 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitVarStmt(this);
     }
-
     final Token name;
     final Expr initializer;
   }
@@ -121,19 +128,26 @@ abstract class Stmt{
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitWhileStmt(this);
     }
-
     final Expr condition;
     final Stmt body;
   }
-  public static class Break extends Stmt {
-    public Break() {}
+  static class Break extends Stmt {
+    Break() {
+    }
+
     @Override
-    <R> R accept(Visitor<R> visitor) { return visitor.visitBreakStmt(this); }
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitBreakStmt(this);
+    }
   }
-  public static class Continue extends Stmt {
-    public Continue() {}
+  static class Continue extends Stmt {
+    Continue() {
+    }
+
     @Override
-    <R> R accept(Visitor<R> visitor) { return visitor.visitContinueStmt(this); }
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitContinueStmt(this);
+    }
   }
 
   abstract <R> R accept(Visitor<R> visitor);

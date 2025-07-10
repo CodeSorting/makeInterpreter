@@ -19,7 +19,18 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         this.interpreter = interpreter;
     }
     private enum FunctionType {
-        NONE, FUNCTION
+        NONE, FUNCTION, METHOD
+    }
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        declare(stmt.name);
+        define(stmt.name);
+
+        for (Stmt.Function method : stmt.methods) {
+            FunctionType declaration = FunctionType.METHOD;
+            resolveFunction(method, declaration);
+        }
+        return null;
     }
     @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
@@ -210,16 +221,27 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         return null;
     }
     @Override
-    public Void visitGetExpr(Expr.Get expr) {
+    public Void visitIndexGetExpr(Expr.IndexGet expr) {
         resolve(expr.object);
         resolve(expr.index);
         return null;
     }
     @Override
-    public Void visitSetExpr(Expr.Set expr) {
+    public Void visitIndexSetExpr(Expr.IndexSet expr) {
         resolve(expr.object);
         resolve(expr.index);
         resolve(expr.value);
+        return null;
+    }
+    @Override
+    public Void visitGetExpr(Expr.Get expr) {
+        resolve(expr.object);
+        return null;
+    }
+    @Override
+    public Void visitSetExpr(Expr.Set expr) {
+        resolve(expr.value);
+        resolve(expr.object);
         return null;
     }
 }
