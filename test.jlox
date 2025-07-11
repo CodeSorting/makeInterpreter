@@ -1,9 +1,0 @@
-//var b = clock();
-//범위반복 (변수 i=0;i<100000;i=i+1) {
-//    출력 i+"\n";
-//}
-//var c = clock();
-//print c-b;
-var a = 10;
-print a;
-var b = 10;

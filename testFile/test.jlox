@@ -1,0 +1,8 @@
+var b = clock();
+var a = [];
+범위반복 (변수 i=0;i<10000000;i=i+1) {
+    a.append(i);
+    a.pop_back();
+}
+var c = clock();
+print c-b;

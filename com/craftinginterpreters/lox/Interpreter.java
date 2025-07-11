@@ -333,24 +333,14 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         for (Expr argument : expr.arguments) {
             arguments.add(evaluate(argument));
         }
-
-        
-        // 배열의 append/붙이기/pop_back/뒤에서빼기 메서드 지원
-        if (callee instanceof List) {
-            List<?> prop = (List<?>)callee;
-            if (prop.size() == 2 && prop.get(0) instanceof List) {
-                List<Object> list = (List<Object>)prop.get(0);
-                Object method = prop.get(1);
-                if ("append".equals(method) || "붙이기".equals(method)) {
-                    list.add(arguments.get(0));
-                    return null;
-                } else if ("pop_back".equals(method) || "뒤에서빼기".equals(method)) {
-                    if (list.size() == 0) return null;
-                    return list.remove(list.size() - 1);
-                }
+        // 배열 내장 메서드 호출 처리
+        if (callee instanceof ArrayMethodWrapper) {
+            ArrayMethodWrapper wrapper = (ArrayMethodWrapper)callee;
+            if (arguments.size() != wrapper.arity()) {
+                throw new RuntimeError(expr.paren, "" + wrapper.arity() + "개의 인자를 기대했지만, 실제로는 " + arguments.size() + "개를 받았습니다.");
             }
+            return wrapper.call(this, arguments);
         }
-
         if (!(callee instanceof LoxCallable)) {
             throw new RuntimeError(expr.paren, "함수나 클래스로만 호출할 수 있습니다.");
         }
@@ -364,10 +354,27 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
     @Override
     public Object visitGetExpr(Expr.Get expr) {
         Object object = evaluate(expr.object);
+        // 배열(List) 타입의 내장 속성/메서드 처리
+        if (object instanceof List) {
+            String name = expr.name.lexeme;
+            if (name.equals("길이") || name.equals("length")) {
+                return (double)((List<?>)object).size();
+            }
+            if (
+                name.equals("붙이기") || name.equals("append") ||
+                name.equals("뒤에서빼기") || name.equals("pop_back") ||
+                name.equals("앞에서빼기") || name.equals("pop_front") ||
+                name.equals("앞에넣기") || name.equals("push_front")
+            ) {
+                return new ArrayMethodWrapper((List<Object>)object, name);
+            }
+            throw new RuntimeError(expr.name, "지원하지 않는 배열 속성/메서드입니다.");
+        }
+        // 인스턴스 필드/메서드 처리
         if (object instanceof LoxInstance) {
             return ((LoxInstance)object).get(expr.name);
         }
-        throw new RuntimeError(expr.name, "오직 인스턴스들만 프로퍼티를 가집니다.");
+        throw new RuntimeError(expr.name, "오직 인스턴스와 배열만 프로퍼티를 가질 수 있습니다.");
     }
     @Override
     public Object visitSetExpr(Expr.Set expr) {
@@ -512,5 +519,45 @@ class Interpreter implements Expr.Visitor<Object>,Stmt.Visitor<Void> {
         
         list.set(idx, value);
         return value;
+    }
+}
+
+// 배열 내장 메서드 래퍼 클래스
+class ArrayMethodWrapper implements LoxCallable {
+    private final List<Object> array;
+    private final String method;
+    public ArrayMethodWrapper(List<Object> array, String method) {
+        this.array = array;
+        this.method = method;
+    }
+    @Override
+    public int arity() {
+        if (method.equals("붙이기") || method.equals("append") || method.equals("앞에넣기") || method.equals("push_front")) return 1;
+        if (method.equals("뒤에서빼기") || method.equals("pop_back") || method.equals("앞에서빼기") || method.equals("pop_front")) return 0;
+        return 0;
+    }
+    @Override
+    public Object call(Interpreter interpreter, List<Object> arguments) {
+        if (method.equals("붙이기") || method.equals("append")) {
+            array.add(arguments.get(0));
+            return null;
+        }
+        if (method.equals("앞에넣기") || method.equals("push_front")) {
+            array.add(0, arguments.get(0));
+            return null;
+        }
+        if (method.equals("뒤에서빼기") || method.equals("pop_back")) {
+            if (array.size() == 0) return null;
+            return array.remove(array.size() - 1);
+        }
+        if (method.equals("앞에서빼기") || method.equals("pop_front")) {
+            if (array.size() == 0) return null;
+            return array.remove(0);
+        }
+        throw new RuntimeError(null, "지원하지 않는 배열 메서드입니다.");
+    }
+    @Override
+    public String toString() {
+        return "<array method " + method + ">";
     }
 }
