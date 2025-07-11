@@ -39,7 +39,7 @@ public class Scanner {
         keywords.put("while", WHILE);
         // 한글 키워드 추가
         keywords.put("클래스",CLASS);
-        keywords.put("지금객체",THIS); //어렵네..
+        keywords.put("자기자신",THIS); //어렵네..
         keywords.put("변수", VAR);
         keywords.put("출력", PRINT);
         keywords.put("범위반복", FOR);

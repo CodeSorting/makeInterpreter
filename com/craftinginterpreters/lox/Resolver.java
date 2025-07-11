@@ -19,17 +19,32 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         this.interpreter = interpreter;
     }
     private enum FunctionType {
-        NONE, FUNCTION, METHOD
+        NONE, FUNCTION, INITIALIZER, METHOD
     }
+    private enum ClassType {
+        NONE, CLASS
+    }
+    private ClassType currentClass = ClassType.NONE;
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+
         declare(stmt.name);
         define(stmt.name);
 
+        beginScope();
+        scopes.peek().put("this", true);
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
+            if (method.name.lexeme.equals("init")) {
+                declaration = FunctionType.INITIALIZER;
+            }
             resolveFunction(method, declaration);
         }
+        endScope();
+        
+        currentClass = enclosingClass;
         return null;
     }
     @Override
@@ -162,7 +177,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitReturnStmt(Stmt.Return stmt) {
         if (currentFunction==FunctionType.NONE) Lox.error(stmt.keyword, "맨 위 코드에 리턴(반환)문을 못 쓴다.");
-        if (stmt.value != null) resolve(stmt.value);
+        if (stmt.value != null) {
+            if (currentFunction == FunctionType.INITIALIZER) {
+                Lox.error(stmt.keyword, "초기화 함수 안에서 값을 리턴할 수 없습니다.");
+            }
+            resolve(stmt.value);
+        }
         return null;
     }
     @Override
@@ -242,6 +262,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitSetExpr(Expr.Set expr) {
         resolve(expr.value);
         resolve(expr.object);
+        return null;
+    }
+    @Override
+    public Void visitThisExpr(Expr.This expr) {
+        if (currentClass==ClassType.NONE) {
+            Lox.error(expr.keyword, "클래스 밖에서 'this(자기자신)'을 사용할 수 없습니다.");
+        }
+        resolveLocal(expr, expr.keyword);
         return null;
     }
 }

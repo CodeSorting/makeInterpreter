@@ -19,7 +19,7 @@ class LoxInstance {
             return fields.get(name.lexeme);
         }
         LoxFunction method = klass.findMethod(name.lexeme);
-        if (method!=null) return method;
+        if (method!=null) return method.bind(this);
 
         throw new RuntimeError(name, "정의되지 않은 프로퍼티 '" + name.lexeme + "'.");
     }
