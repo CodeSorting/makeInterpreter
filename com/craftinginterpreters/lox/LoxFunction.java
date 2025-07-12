@@ -15,6 +15,13 @@ class LoxFunction implements LoxCallable {
     @Override
     public Object call(Interpreter interpreter,List<Object> arguments) {
         Environment environment = new Environment(closure);
+        
+        // 메서드인 경우 this와 자기자신을 환경에 추가
+        if (closure.containsKey("this")) {
+            environment.define("this", closure.getValue("this"));
+            environment.define("자기자신", closure.getValue("this"));
+        }
+        
         for (int i=0;i<declaration.params.size();++i) {
             environment.define(declaration.params.get(i).lexeme, arguments.get(i));
         }
@@ -40,6 +47,7 @@ class LoxFunction implements LoxCallable {
     LoxFunction bind(LoxInstance instance) {
         Environment environment = new Environment(closure);
         environment.define("this", instance);
+        environment.define("자기자신", instance);
         return new LoxFunction(declaration, environment,isInitializer);
     }
 }

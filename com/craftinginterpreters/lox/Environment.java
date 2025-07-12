@@ -50,4 +50,14 @@ class Environment {
         }
         throw new RuntimeError(name,"정의되지 않은 변수 '" + name.lexeme + "'입니다.");
     }
+    
+    // 키가 존재하는지 확인하는 메서드
+    boolean containsKey(String name) {
+        return values.containsKey(name);
+    }
+    
+    // 키로 값을 가져오는 메서드
+    Object getValue(String name) {
+        return values.get(name);
+    }
 }

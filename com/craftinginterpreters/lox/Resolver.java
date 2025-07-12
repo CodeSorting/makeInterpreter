@@ -35,6 +35,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         beginScope();
         scopes.peek().put("this", true);
+        scopes.peek().put("자기자신", true);
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
             if (method.name.lexeme.equals("init")) {
@@ -145,6 +146,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         // 함수의 새로운 스코프 시작(매개변수, 지역변수용)
         beginScope();
+        
+        // 메서드인 경우 this를 스코프에 추가
+        if (type == FunctionType.METHOD || type == FunctionType.INITIALIZER) {
+            scopes.peek().put("this", true);
+            scopes.peek().put("자기자신", true);
+        }
+        
         // 매개변수 각각을 스코프에 등록(이름만 등록 후 바로 정의)
         for (Token param : function.params) {
             declare(param);
